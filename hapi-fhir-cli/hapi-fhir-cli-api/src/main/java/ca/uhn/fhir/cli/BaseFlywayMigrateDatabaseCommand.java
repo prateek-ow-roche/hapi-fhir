@@ -30,9 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.defaultString;
@@ -125,16 +125,16 @@ public abstract class BaseFlywayMigrateDatabaseCommand<T extends Enum> extends B
 			migrator = new FlywayMigrator(myMigrationTableName);
 		}
 
-		DriverTypeEnum.ConnectionProperties connectionProperties = driverType.newConnectionProperties(url, username, password);
-
-		migrator.setDataSource(connectionProperties.getDataSource());
-		migrator.setDriverType(driverType);
-		migrator.setDryRun(dryRun);
-		migrator.setNoColumnShrink(noColumnShrink);
-		migrator.setOutOfOrderPermitted(outOfOrderPermitted);
-		String skipVersions = theCommandLine.getOptionValue(BaseFlywayMigrateDatabaseCommand.SKIP_VERSIONS);
-		addTasks(migrator, skipVersions);
-		migrator.migrate();
+		try (DriverTypeEnum.ConnectionProperties connectionProperties = driverType.newConnectionProperties(url, username, password)) {
+			migrator.setDataSource(connectionProperties.getDataSource());
+			migrator.setDriverType(driverType);
+			migrator.setDryRun(dryRun);
+			migrator.setNoColumnShrink(noColumnShrink);
+			migrator.setOutOfOrderPermitted(outOfOrderPermitted);
+			String skipVersions = theCommandLine.getOptionValue(BaseFlywayMigrateDatabaseCommand.SKIP_VERSIONS);
+			addTasks(migrator, skipVersions);
+			migrator.migrate();
+		}
 	}
 
 	protected abstract void addTasks(BaseMigrator theMigrator, String theSkippedVersions);

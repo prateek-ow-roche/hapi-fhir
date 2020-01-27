@@ -42,13 +42,22 @@ public class TaskOnlyMigrator extends BaseMigrator {
 
 	@Override
 	public void migrate() {
-		DriverTypeEnum.ConnectionProperties connectionProperties = getDriverType().newConnectionProperties(getDataSource());
+		try (DriverTypeEnum.ConnectionProperties connectionProperties = getDriverType().newConnectionProperties(getDataSource())) {
+			executeTasks(connectionProperties);
+		}
 
+		if (isDryRun()) {
+			StringBuilder statementBuilder = buildExecutedStatementsString();
+			ourLog.info("SQL that would be executed:\n\n***********************************\n{}***********************************", statementBuilder);
+		}
+	}
+
+	private void executeTasks(DriverTypeEnum.ConnectionProperties theConnectionProperties) {
 		for (BaseTask next : myTasks) {
 			next.setDriverType(getDriverType());
 			next.setDryRun(isDryRun());
 			next.setNoColumnShrink(isNoColumnShrink());
-			next.setConnectionProperties(connectionProperties);
+			next.setConnectionProperties(theConnectionProperties);
 
 			try {
 				ourLog.info("Executing task of type: {}", next.getClass().getSimpleName());
@@ -58,11 +67,6 @@ public class TaskOnlyMigrator extends BaseMigrator {
 				throw new InternalErrorException(e);
 			}
 		}
-		if (isDryRun()) {
-			StringBuilder statementBuilder = buildExecutedStatementsString();
-			ourLog.info("SQL that would be executed:\n\n***********************************\n{}***********************************", statementBuilder);
-		}
-
 	}
 
 	@Override

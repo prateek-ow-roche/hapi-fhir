@@ -960,7 +960,7 @@ public class SearchCoordinatorSvcImpl implements ISearchCoordinatorSvc {
 			 */
 			boolean wantOnlyCount =
 				SummaryEnum.COUNT.equals(myParams.getSummaryMode())
-				| INTEGER_0.equals(myParams.getCount());
+				|| INTEGER_0.equals(myParams.getCount());
 			boolean wantCount =
 				wantOnlyCount ||
 					SearchTotalModeEnum.ACCURATE.equals(myParams.getSearchTotalMode()) ||
