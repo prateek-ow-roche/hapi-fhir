@@ -30,6 +30,7 @@ import org.w3c.dom.NodeList;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.apache.commons.lang.StringUtils.defaultString;
@@ -648,9 +649,8 @@ public abstract class BaseStructureParser {
 				myNameToDatatypeClass.put("boundCodeableConcept", ca.uhn.fhir.model.dstu2.composite.BoundCodeableConceptDt.class.getName());
 			}
 
-			try {
-				File versionFile = new File(theResourceOutputDirectory, "fhirversion.properties");
-				OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(versionFile, false), "UTF-8");
+			File versionFile = new File(theResourceOutputDirectory, "fhirversion.properties");
+			try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(versionFile, false), StandardCharsets.UTF_8)) {
 
 				ourLog.debug("Writing file: {}", versionFile.getAbsolutePath());
 
@@ -681,8 +681,6 @@ public abstract class BaseStructureParser {
 				InputStream templateIs = ResourceGeneratorUsingSpreadsheet.class.getResourceAsStream("/vm/fhirversion_properties.vm");
 				InputStreamReader templateReader = new InputStreamReader(templateIs);
 				v.evaluate(ctx, w, "", templateReader);
-
-				w.close();
 			} catch (IOException e) {
 				throw new MojoFailureException(e.getMessage(), e);
 			}

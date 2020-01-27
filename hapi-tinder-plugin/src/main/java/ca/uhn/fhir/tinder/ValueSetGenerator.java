@@ -280,12 +280,13 @@ public class ValueSetGenerator {
 		}
 		String fileName = prefix + valueSetName + suffix;
 		File f = new File(theOutputDirectory, fileName);
+		InputStream templateIs = null;
 		try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(f, false), StandardCharsets.UTF_8)) {
 
 			ourLog.debug("Writing file: {}", f.getAbsolutePath());
 
 			VelocityContext ctx = new VelocityContext();
-			InputStream templateIs = null;
+
 			ctx.put("valueSet", theValueSetTm);
 			ctx.put("packageBase", thePackageBase);
 			ctx.put("esc", new EscapeTool());
@@ -303,6 +304,10 @@ public class ValueSetGenerator {
 
 			InputStreamReader templateReader = new InputStreamReader(templateIs, "UTF-8");
 			v.evaluate(ctx, w, "", templateReader);
+		} finally {
+			if (templateIs != null) {
+				templateIs.close();
+			}
 		}
 	}
 
