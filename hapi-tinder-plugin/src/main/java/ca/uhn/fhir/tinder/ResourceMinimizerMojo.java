@@ -1,31 +1,32 @@
 package ca.uhn.fhir.tinder;
 
-import java.io.*;
-import java.net.URL;
-import java.util.Collection;
-
 import ca.uhn.fhir.context.BaseRuntimeChildDefinition;
 import ca.uhn.fhir.context.BaseRuntimeElementCompositeDefinition;
-import ca.uhn.fhir.context.BaseRuntimeElementDefinition;
-import ca.uhn.fhir.util.BundleUtil;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.plugin.*;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.hl7.fhir.instance.model.api.IBaseBundle;
-import org.hl7.fhir.instance.model.api.IBaseResource;
-
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.api.IResource;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
 import ca.uhn.fhir.model.dstu2.resource.Bundle.Entry;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.api.EncodingEnum;
+import ca.uhn.fhir.util.BundleUtil;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.joran.util.ConfigurationWatchListUtil;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
+import org.hl7.fhir.instance.model.api.IBaseResource;
+
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 
 @Mojo(name = "minimize-resources", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class ResourceMinimizerMojo extends AbstractMojo {
@@ -65,8 +66,8 @@ public class ResourceMinimizerMojo extends AbstractMojo {
 		}
 
 		ourLog.info("Looking for files in directory: {}", targetDirectory.getAbsolutePath());
-		
-		Collection<File> files = FileUtils.listFiles(targetDirectory, new String[] { "xml", "json" }, true);
+
+		Collection<File> files = FileUtils.listFiles(targetDirectory, new String[]{"xml", "json"}, true);
 		for (File nextFile : files) {
 			ourLog.debug("Checking file: {}", nextFile);
 
@@ -92,7 +93,7 @@ public class ResourceMinimizerMojo extends AbstractMojo {
 					}
 				}
 			} else {
-				minimizeResource((IBaseResource)input);
+				minimizeResource((IBaseResource) input);
 			}
 
 			String outputString = parser.setPrettyPrint(true).encodeResourceToString(input);
@@ -115,12 +116,10 @@ public class ResourceMinimizerMojo extends AbstractMojo {
 				ourLog.info("Trimming contents of resource: {} - From {} to {}", nextFile, FileUtils.byteCountToDisplaySize(inputString.length()), FileUtils.byteCountToDisplaySize(outputString.length()));
 				myByteCount += (inputString.length() - outputString.length());
 				myFileCount++;
-				try {
-					String f = nextFile.getAbsolutePath();
-					Writer w = new OutputStreamWriter(new FileOutputStream(f, false), "UTF-8");
-					w = new BufferedWriter(w);
-					w.append(outputString);
-					w.close();
+				String f = nextFile.getAbsolutePath();
+				try (Writer w = new OutputStreamWriter(new FileOutputStream(f, false), StandardCharsets.UTF_8);
+					  BufferedWriter bw = new BufferedWriter(w)) {
+					bw.append(outputString);
 				} catch (IOException e) {
 					throw new MojoFailureException("Failed to write " + nextFile, e);
 				}
@@ -172,7 +171,7 @@ public class ResourceMinimizerMojo extends AbstractMojo {
 
 		int fileCount = 0;
 		long byteCount = 0;
-		
+
 		ResourceMinimizerMojo m = new ResourceMinimizerMojo();
 
 //		m.myCtx = ctxDstu2;

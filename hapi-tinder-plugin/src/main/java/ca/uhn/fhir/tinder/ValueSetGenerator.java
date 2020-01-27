@@ -21,6 +21,7 @@ import org.apache.velocity.tools.generic.EscapeTool;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class ValueSetGenerator {
@@ -121,9 +122,9 @@ public class ValueSetGenerator {
 				}
 			}
 		}
-		
+
 		/*
-		 *	Purge empty valuesets 
+		 *	Purge empty valuesets
 		 */
 		for (Iterator<java.util.Map.Entry<String, ValueSetTm>> iter = myValueSets.entrySet().iterator(); iter.hasNext(); ) {
 			java.util.Map.Entry<String, ValueSetTm> next = iter.next();
@@ -132,7 +133,7 @@ public class ValueSetGenerator {
 				continue;
 			}
 		}
-		
+
 
 		// File[] files = new
 		// File(myResourceValueSetFiles).listFiles((FilenameFilter) new
@@ -179,7 +180,7 @@ public class ValueSetGenerator {
 //			ourLog.info("ValueSet " + nextVs.getName() + " has no codes, not going to generate any code for it");
 //			return null;
 //		}
-		
+
 		if (myValueSets.containsKey(vs.getName())) {
 			ourLog.warn("Duplicate Name: " + vs.getName());
 		} else {
@@ -211,7 +212,7 @@ public class ValueSetGenerator {
 		myTemplate = theTemplate;
 	}
 
-	public void setTemplateFile (File theTemplateFile) {
+	public void setTemplateFile(File theTemplateFile) {
 		myTemplateFile = theTemplateFile;
 	}
 
@@ -279,31 +280,30 @@ public class ValueSetGenerator {
 		}
 		String fileName = prefix + valueSetName + suffix;
 		File f = new File(theOutputDirectory, fileName);
-		OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(f, false), "UTF-8");
+		try (OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(f, false), StandardCharsets.UTF_8)) {
 
-		ourLog.debug("Writing file: {}", f.getAbsolutePath());
+			ourLog.debug("Writing file: {}", f.getAbsolutePath());
 
-		VelocityContext ctx = new VelocityContext();
-		InputStream templateIs = null;
-		ctx.put("valueSet", theValueSetTm);
-		ctx.put("packageBase", thePackageBase);
-		ctx.put("esc", new EscapeTool());
+			VelocityContext ctx = new VelocityContext();
+			InputStream templateIs = null;
+			ctx.put("valueSet", theValueSetTm);
+			ctx.put("packageBase", thePackageBase);
+			ctx.put("esc", new EscapeTool());
 
-		VelocityEngine v = VelocityHelper.configureVelocityEngine(myTemplateFile, myVelocityPath, myVelocityProperties);
-		if (myTemplateFile != null) {
-			templateIs = new FileInputStream(myTemplateFile);
-		} else {
-			String templateName = myTemplate;
-			if (null == templateName) {
-				templateName = "/vm/valueset.vm";
+			VelocityEngine v = VelocityHelper.configureVelocityEngine(myTemplateFile, myVelocityPath, myVelocityProperties);
+			if (myTemplateFile != null) {
+				templateIs = new FileInputStream(myTemplateFile);
+			} else {
+				String templateName = myTemplate;
+				if (null == templateName) {
+					templateName = "/vm/valueset.vm";
+				}
+				templateIs = this.getClass().getResourceAsStream(templateName);
 			}
-			templateIs = this.getClass().getResourceAsStream(templateName);
+
+			InputStreamReader templateReader = new InputStreamReader(templateIs, "UTF-8");
+			v.evaluate(ctx, w, "", templateReader);
 		}
-
-		InputStreamReader templateReader = new InputStreamReader(templateIs, "UTF-8");
-		v.evaluate(ctx, w, "", templateReader);
-
-		w.close();
 	}
 
 	public void writeMarkedValueSets(File theOutputDirectory, String thePackageBase) throws MojoFailureException {

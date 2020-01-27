@@ -1,15 +1,11 @@
 package ca.uhn.fhir.tinder;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
+import ca.uhn.fhir.tinder.AbstractGenerator.FailureException;
+import ca.uhn.fhir.tinder.GeneratorContext.ResourceSource;
+import ca.uhn.fhir.tinder.TinderStructuresMojo.ValueSetFileDefinition;
+import ca.uhn.fhir.tinder.parser.BaseStructureParser;
+import ca.uhn.fhir.tinder.parser.DatatypeGeneratorUsingSpreadsheet;
+import ca.uhn.fhir.tinder.parser.TargetType;
 import org.apache.commons.lang.WordUtils;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
@@ -24,14 +20,9 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.tools.generic.EscapeTool;
 
-import ca.uhn.fhir.tinder.AbstractGenerator.ExecutionException;
-import ca.uhn.fhir.tinder.AbstractGenerator.FailureException;
-import ca.uhn.fhir.tinder.GeneratorContext.ResourceSource;
-import ca.uhn.fhir.tinder.TinderStructuresMojo.ValueSetFileDefinition;
-import ca.uhn.fhir.tinder.parser.BaseStructureParser;
-import ca.uhn.fhir.tinder.parser.BaseStructureSpreadsheetParser;
-import ca.uhn.fhir.tinder.parser.DatatypeGeneratorUsingSpreadsheet;
-import ca.uhn.fhir.tinder.parser.TargetType;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * Generate a single file based on resource or composite type metadata.
@@ -41,7 +32,7 @@ import ca.uhn.fhir.tinder.parser.TargetType;
  * generated using a Velocity template that can be taken from
  * inside the hapi-timder-plugin project or can be located in other projects
  * <p>
- * The following Maven plug-in configuration properties are used with this plug-in 
+ * The following Maven plug-in configuration properties are used with this plug-in
  * <p>
  * <table border="1" cellpadding="2" cellspacing="0">
  *   <tr>
@@ -58,28 +49,28 @@ import ca.uhn.fhir.tinder.parser.TargetType;
  *   </tr>
  *   <tr>
  *     <td valign="top">baseDir</td>
- *     <td valign="top">The Maven project's base directory. This is used to 
+ *     <td valign="top">The Maven project's base directory. This is used to
  *     possibly locate other assets within the project used in file generation.</td>
  *     <td valign="top" align="center">No. Defaults to: <code>${project.build.directory}/..</code></td>
  *   </tr>
  *   <tr>
  *     <td valign="top">generateResources</td>
  *     <td valign="top">Should files be generated from FHIR resource metadata?<br>
- *     Valid values:&nbsp;<code><b>true</b></code>&nbsp;|&nbsp;<code><b>false</b></code></td> 
+ *     Valid values:&nbsp;<code><b>true</b></code>&nbsp;|&nbsp;<code><b>false</b></code></td>
  *     <td valign="top" align="center" rowspan="2">One of these two options must be specified as <code><b>true</b></code></td>
  *   </tr>
  *   <tr>
  *     <td valign="top">generateDataTypes</td>
  *     <td valign="top">Should files be generated from FHIR composite data type metadata?<br>
- *     Valid values:&nbsp;<code><b>true</b></code>&nbsp;|&nbsp;<code><b>false</b></code></td> 
+ *     Valid values:&nbsp;<code><b>true</b></code>&nbsp;|&nbsp;<code><b>false</b></code></td>
  *   </tr>
  *   <tr>
  *     <td valign="top">resourceSource</td>
  *     <td valign="top">Which source of resource definitions should be processed? Valid values are:<br>
  *     <ul>
  *     <li><code><b>spreadsheet</b></code>&nbsp;&nbsp;to cause resources to be generated based on the FHIR spreadsheets</li>
- *     <li><code><b>model</b></code>&nbsp;&nbsp;to cause resources to be generated based on the model structure classes. Note that 
- *     <code>generateResources</code> is the only one of the above options that can be used when <code>model</code> is specified.</li></ul></td> 
+ *     <li><code><b>model</b></code>&nbsp;&nbsp;to cause resources to be generated based on the model structure classes. Note that
+ *     <code>generateResources</code> is the only one of the above options that can be used when <code>model</code> is specified.</li></ul></td>
  *     <td valign="top" align="center">No. Defaults to: <code><b>spreadsheet</b></code></td>
  *   </tr>
  *   <tr>
@@ -151,7 +142,7 @@ import ca.uhn.fhir.tinder.parser.TargetType;
  *   <tr>
  *     <td valign="top">templateFile</td>
  *     <td valign="top">The full path to the <i>Velocity</i> template that is
- *     to be used to generate the files.</td> 
+ *     to be used to generate the files.</td>
  *   </tr>
  *   <tr>
  *     <td valign="top">velocityPath</td>
@@ -169,7 +160,7 @@ import ca.uhn.fhir.tinder.parser.TargetType;
  *     <td valign="top">includeResources</td>
  *     <td valign="top">A list of the names of the resources or composite data types that should
  *     be used in the file generation</td>
- *     <td valign="top" align="center">No. Defaults to all defined resources except for DSTU2, 
+ *     <td valign="top" align="center">No. Defaults to all defined resources except for DSTU2,
  *     the <code>Binary</code> resource is excluded and
  *     for DSTU3, the <code>Conformance</code> resource is excluded.</td>
  *   </tr>
@@ -183,7 +174,7 @@ import ca.uhn.fhir.tinder.parser.TargetType;
  *     <td valign="top">valueSetFiles</td>
  *     <td valign="top">A list of files containing value-set resource definitions
  *     to be used.</td>
- *     <td valign="top" align="center">No. Defaults to all defined value-sets that 
+ *     <td valign="top" align="center">No. Defaults to all defined value-sets that
  *     are referenced from the selected resources.</td>
  *   </tr>
  *   <tr>
@@ -194,11 +185,8 @@ import ca.uhn.fhir.tinder.parser.TargetType;
  *     for each selected resource</td>
  *   </tr>
  * </table>
- * 
- * 
- * 
- * @author Bill.Denton
  *
+ * @author Bill.Denton
  */
 @Mojo(name = "generate-single-file", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class TinderGenericSingleFileMojo extends AbstractMojo {
@@ -211,12 +199,12 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 	@Parameter(required = true, defaultValue = "${project.build.directory}/..")
 	private String baseDir;
 
-	@Parameter(required = false, defaultValue="false")
+	@Parameter(required = false, defaultValue = "false")
 	private boolean generateResources;
 
 	@Parameter(required = false, defaultValue = "false")
 	private boolean generateDatatypes;
-	
+
 	@Parameter(required = false)
 	private File targetSourceDirectory;
 
@@ -225,7 +213,7 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 
 	@Parameter(required = false)
 	private String packageBase;
-	
+
 	@Parameter(required = false)
 	private File targetResourceDirectory;
 
@@ -234,7 +222,7 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 
 	@Parameter(required = false)
 	private String targetFile;
-	
+
 	// one of these two is required
 	@Parameter(required = false)
 	private String template;
@@ -250,7 +238,7 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 
 	@Parameter(required = false)
 	private List<String> excludeResources;
-	
+
 	@Parameter(required = false)
 	private String resourceSource;
 
@@ -262,7 +250,7 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		
+
 		GeneratorContext context = new GeneratorContext();
 		Generator generator = new Generator();
 		try {
@@ -282,7 +270,7 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 		} catch (FailureException e) {
 			throw new MojoFailureException(e.getMessage(), e.getCause());
 		}
-		
+
 		try {
 			/*
 			 * Deal with the generation target
@@ -304,8 +292,7 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 				if (!targetFile.endsWith(".java")) {
 					targetFile += ".java";
 				}
-			} else
-			if (targetResourceDirectory != null) {
+			} else if (targetResourceDirectory != null) {
 				if (targetSourceDirectory != null) {
 					throw new MojoFailureException("Both [targetSourceDirectory] and [targetResourceDirectory] are specified. Please choose just one.");
 				}
@@ -323,75 +310,85 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 			} else {
 				throw new MojoFailureException("Either [targetSourceDirectory] or [targetResourceDirectory] must be specified.");
 			}
-			ourLog.info(" * Output ["+targetType.toString()+"] file ["+targetFile+"] in directory: " + targetDirectory.getAbsolutePath());
+			ourLog.info(" * Output [" + targetType.toString() + "] file [" + targetFile + "] in directory: " + targetDirectory.getAbsolutePath());
 			targetDirectory.mkdirs();
 			File target = new File(targetDirectory, targetFile);
-			OutputStreamWriter targetWriter = new OutputStreamWriter(new FileOutputStream(target, false), StandardCharsets.UTF_8);
-	
-			/*
-			 * Next, deal with the template and initialize velocity
-			 */
-			VelocityEngine v = VelocityHelper.configureVelocityEngine(templateFile, velocityPath, velocityProperties);
-			InputStream templateIs;
-			if (templateFile != null) {
-				templateIs = new FileInputStream(templateFile);
-			} else {
-				templateIs = this.getClass().getResourceAsStream(template);
-			}
-			InputStreamReader templateReader = new InputStreamReader(templateIs);
-	
-			/*
-			 * build new Velocity Context
-			 */
-			VelocityContext ctx = new VelocityContext();
-			if (packageBase != null) {
-				ctx.put("packageBase", packageBase);
-			} else
-			if (targetPackage != null) {
-				int ix = targetPackage.lastIndexOf('.');
-				if (ix > 0) {
-					ctx.put("packageBase", targetPackage.subSequence(0, ix));
+
+			InputStream templateIs = null;
+			InputStreamReader templateReader = null;
+			try (OutputStreamWriter targetWriter = new OutputStreamWriter(new FileOutputStream(target, false), StandardCharsets.UTF_8)) {
+
+				/*
+				 * Next, deal with the template and initialize velocity
+				 */
+				VelocityEngine v = VelocityHelper.configureVelocityEngine(templateFile, velocityPath, velocityProperties);
+				if (templateFile != null) {
+					templateIs = new FileInputStream(templateFile);
 				} else {
-					ctx.put("packageBase", targetPackage);
+					templateIs = this.getClass().getResourceAsStream(template);
 				}
-			}
-			ctx.put("targetPackage", targetPackage);
-			ctx.put("targetFolder", targetFolder);
-			ctx.put("version", version);
-			ctx.put("isRi", BaseStructureParser.determineVersionEnum(version).isRi());
-			ctx.put("hash", "#");
-			ctx.put("esc", new EscapeTool());
-			if (BaseStructureParser.determineVersionEnum(version).isRi()) {
-				ctx.put("resourcePackage", "org.hl7.fhir." + version + ".model");
-			} else {
-				ctx.put("resourcePackage", "ca.uhn.fhir.model." + version + ".resource");
-			}
-			
-			String capitalize = WordUtils.capitalize(version);
-			if ("Dstu".equals(capitalize)) {
-				capitalize="Dstu1";
-			}
-			ctx.put("versionCapitalized", capitalize);
-			
-			/*
-			 * Write resources if selected
-			 */
-			BaseStructureParser rp = context.getResourceGenerator();
-			if (generateResources && rp != null) {
-				ourLog.info("Writing Resources...");
-				ctx.put("resources", rp.getResources());
-				v.evaluate(ctx, targetWriter, "", templateReader);
-				targetWriter.close();
-			} else {
-				DatatypeGeneratorUsingSpreadsheet dtp = context.getDatatypeGenerator();
-				if (generateDatatypes && dtp != null) {
-					ourLog.info("Writing DataTypes...");
-					ctx.put("datatypes", dtp.getResources());
+				templateReader = new InputStreamReader(templateIs);
+
+				/*
+				 * build new Velocity Context
+				 */
+				VelocityContext ctx = new VelocityContext();
+				if (packageBase != null) {
+					ctx.put("packageBase", packageBase);
+				} else if (targetPackage != null) {
+					int ix = targetPackage.lastIndexOf('.');
+					if (ix > 0) {
+						ctx.put("packageBase", targetPackage.subSequence(0, ix));
+					} else {
+						ctx.put("packageBase", targetPackage);
+					}
+				}
+				ctx.put("targetPackage", targetPackage);
+				ctx.put("targetFolder", targetFolder);
+				ctx.put("version", version);
+				ctx.put("isRi", BaseStructureParser.determineVersionEnum(version).isRi());
+				ctx.put("hash", "#");
+				ctx.put("esc", new EscapeTool());
+				if (BaseStructureParser.determineVersionEnum(version).isRi()) {
+					ctx.put("resourcePackage", "org.hl7.fhir." + version + ".model");
+				} else {
+					ctx.put("resourcePackage", "ca.uhn.fhir.model." + version + ".resource");
+				}
+
+				String capitalize = WordUtils.capitalize(version);
+				if ("Dstu".equals(capitalize)) {
+					capitalize = "Dstu1";
+				}
+				ctx.put("versionCapitalized", capitalize);
+
+				/*
+				 * Write resources if selected
+				 */
+				BaseStructureParser rp = context.getResourceGenerator();
+				if (generateResources && rp != null) {
+					ourLog.info("Writing Resources...");
+					ctx.put("resources", rp.getResources());
 					v.evaluate(ctx, targetWriter, "", templateReader);
 					targetWriter.close();
+				} else {
+					DatatypeGeneratorUsingSpreadsheet dtp = context.getDatatypeGenerator();
+					if (generateDatatypes && dtp != null) {
+						ourLog.info("Writing DataTypes...");
+						ctx.put("datatypes", dtp.getResources());
+						v.evaluate(ctx, targetWriter, "", templateReader);
+						targetWriter.close();
+					}
+				}
+			} finally {
+				if (templateIs != null) {
+					templateIs.close();
+				}
+				if (templateReader != null) {
+					templateReader.close();
 				}
 			}
-			
+
+
 			switch (targetType) {
 				case SOURCE: {
 					myProject.addCompileSourceRoot(targetSourceDirectory.getAbsolutePath());
@@ -402,7 +399,7 @@ public class TinderGenericSingleFileMojo extends AbstractMojo {
 					resource.setDirectory(targetResourceDirectory.getAbsolutePath());
 					String resName = targetFile;
 					if (targetFolder != null) {
-						resName = targetFolder+File.separator+targetFile;
+						resName = targetFolder + File.separator + targetFile;
 					}
 					resource.addInclude(resName);
 					myProject.addResource(resource);

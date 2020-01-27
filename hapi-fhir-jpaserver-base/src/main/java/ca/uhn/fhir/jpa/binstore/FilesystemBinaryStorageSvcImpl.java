@@ -73,23 +73,24 @@ public class FilesystemBinaryStorageSvcImpl extends BaseBinaryStorageSvcImpl {
 		File storageFilename = getStorageFilename(storagePath, theResourceId, id);
 		ourLog.info("Writing to file: {}", storageFilename.getAbsolutePath());
 		CountingInputStream countingInputStream = createCountingInputStream(theInputStream);
-		HashingInputStream hashingInputStream = createHashingInputStream(countingInputStream);
-		try (FileOutputStream outputStream = new FileOutputStream(storageFilename)) {
-			IOUtils.copy(hashingInputStream, outputStream);
+		try (HashingInputStream hashingInputStream = createHashingInputStream(countingInputStream)) {
+			try (FileOutputStream outputStream = new FileOutputStream(storageFilename)) {
+				IOUtils.copy(hashingInputStream, outputStream);
+			}
+
+			// Write descriptor file
+			long count = countingInputStream.getCount();
+			StoredDetails details = new StoredDetails(id, count, theContentType, hashingInputStream, new Date());
+			File descriptorFilename = getDescriptorFilename(storagePath, theResourceId, id);
+			ourLog.info("Writing to file: {}", descriptorFilename.getAbsolutePath());
+			try (FileWriter writer = new FileWriter(descriptorFilename)) {
+				myJsonSerializer.writeValue(writer, details);
+			}
+
+			ourLog.info("Stored binary blob with {} bytes and ContentType {} for resource {}", count, theContentType, theResourceId);
+
+			return details;
 		}
-
-		// Write descriptor file
-		long count = countingInputStream.getCount();
-		StoredDetails details = new StoredDetails(id, count, theContentType, hashingInputStream, new Date());
-		File descriptorFilename = getDescriptorFilename(storagePath, theResourceId, id);
-		ourLog.info("Writing to file: {}", descriptorFilename.getAbsolutePath());
-		try (FileWriter writer = new FileWriter(descriptorFilename)) {
-			myJsonSerializer.writeValue(writer, details);
-		}
-
-		ourLog.info("Stored binary blob with {} bytes and ContentType {} for resource {}", count, theContentType, theResourceId);
-
-		return details;
 	}
 
 	@Override
