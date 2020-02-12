@@ -95,7 +95,7 @@ public class ConsentInterceptorTest {
 		patientB.addIdentifier().setSystem("SYSTEM").setValue("VALUEB");
 		ourPatientProvider.store(patientB);
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 
@@ -129,7 +129,7 @@ public class ConsentInterceptorTest {
 
 		HttpGet httpGet;
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 
@@ -141,7 +141,7 @@ public class ConsentInterceptorTest {
 			assertThat(responseContent, not(containsString("\"total\"")));
 		}
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.AUTHORIZED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.AUTHORIZED);
 		httpGet = new HttpGet("http://localhost:" + ourPort + "/Patient?_total=accurate");
 		try (CloseableHttpResponse status = ourClient.execute(httpGet)) {
 			assertEquals(200, status.getStatusLine().getStatusCode());
@@ -157,7 +157,7 @@ public class ConsentInterceptorTest {
 		ourPatientProvider.store((Patient) new Patient().setActive(true).setId("PTA"));
 		ourPatientProvider.store((Patient) new Patient().setActive(false).setId("PTB"));
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t-> ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t-> ConsentOutcome.AUTHORIZED);
 
@@ -170,7 +170,7 @@ public class ConsentInterceptorTest {
 			assertThat(responseContent, containsString("PTA"));
 		}
 
-		verify(myConsentSvc, times(1)).startOperation(any(), any());
+		verify(myConsentSvc, times(1)).startOperation(any(), any(), any());
 		verify(myConsentSvc, times(2)).canSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(3)).willSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(1)).completeOperationSuccess(any(), any());
@@ -184,7 +184,7 @@ public class ConsentInterceptorTest {
 		ourPatientProvider.store((Patient) new Patient().setActive(true).setId("PTA"));
 		ourPatientProvider.store((Patient) new Patient().setActive(false).setId("PTB"));
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t->{
 			OperationOutcome oo = new OperationOutcome();
@@ -201,7 +201,7 @@ public class ConsentInterceptorTest {
 			assertThat(responseContent, containsString("A DIAG"));
 		}
 
-		verify(myConsentSvc, times(1)).startOperation(any(), any());
+		verify(myConsentSvc, times(1)).startOperation(any(), any(), any());
 		verify(myConsentSvc, times(2)).canSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(3)).willSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(1)).completeOperationSuccess(any(), any());
@@ -214,7 +214,7 @@ public class ConsentInterceptorTest {
 		ourPatientProvider.store((Patient) new Patient().setActive(true).setId("PTA"));
 		ourPatientProvider.store((Patient) new Patient().setActive(false).setId("PTB"));
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t-> ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t-> {
 			return ConsentOutcome.REJECT;
@@ -228,7 +228,7 @@ public class ConsentInterceptorTest {
 			assertNull(status.getFirstHeader(Constants.HEADER_CONTENT_TYPE));
 		}
 
-		verify(myConsentSvc, times(1)).startOperation(any(), any());
+		verify(myConsentSvc, times(1)).startOperation(any(), any(), any());
 		verify(myConsentSvc, times(2)).canSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(3)).willSeeResource(any(), any(), any()); // the two patients + the bundle
 		verify(myConsentSvc, times(1)).completeOperationSuccess(any(), any());
@@ -241,7 +241,7 @@ public class ConsentInterceptorTest {
 		ourPatientProvider.store((Patient) new Patient().setActive(true).setId("PTA"));
 		ourPatientProvider.store((Patient) new Patient().setActive(false).setId("PTB"));
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t->{
 			IBaseResource resource = (IBaseResource) t.getArguments()[1];
@@ -266,7 +266,7 @@ public class ConsentInterceptorTest {
 			assertEquals("PTB", response.getEntry().get(1).getResource().getIdElement().getIdPart());
 		}
 
-		verify(myConsentSvc, times(1)).startOperation(any(), any());
+		verify(myConsentSvc, times(1)).startOperation(any(), any(), any());
 		verify(myConsentSvc, times(2)).canSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(3)).willSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(1)).completeOperationSuccess(any(), any());
@@ -279,7 +279,7 @@ public class ConsentInterceptorTest {
 		ourPatientProvider.store((Patient) new Patient().setActive(true).setId("PTA"));
 		ourPatientProvider.store((Patient) new Patient().setActive(false).setId("PTB"));
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t->{
 			IBaseResource resource = (IBaseResource) t.getArguments()[1];
@@ -306,7 +306,7 @@ public class ConsentInterceptorTest {
 			assertEquals("PTB", response.getEntry().get(1).getResource().getIdElement().getIdPart());
 		}
 
-		verify(myConsentSvc, times(1)).startOperation(any(), any());
+		verify(myConsentSvc, times(1)).startOperation(any(), any(), any());
 		verify(myConsentSvc, times(2)).canSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(4)).willSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(1)).completeOperationSuccess(any(), any());
@@ -319,7 +319,7 @@ public class ConsentInterceptorTest {
 		ourPatientProvider.store((Patient) new Patient().setActive(true).setId("PTA"));
 		ourPatientProvider.store((Patient) new Patient().setActive(false).setId("PTB"));
 
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(myConsentSvc.willSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t->{
 			IBaseResource resource = (IBaseResource) t.getArguments()[1];
@@ -343,7 +343,7 @@ public class ConsentInterceptorTest {
 			assertEquals("PTB", response.getEntry().get(1).getResource().getIdElement().getIdPart());
 		}
 
-		verify(myConsentSvc, times(1)).startOperation(any(), any());
+		verify(myConsentSvc, times(1)).startOperation(any(), any(), any());
 		verify(myConsentSvc, times(2)).canSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(3)).willSeeResource(any(), any(), any());
 		verify(myConsentSvc, times(1)).completeOperationSuccess(any(), any());
@@ -353,7 +353,7 @@ public class ConsentInterceptorTest {
 
 	@Test
 	public void testOutcomeException() throws IOException {
-		when(myConsentSvc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(myConsentSvc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 
 		HttpGet httpGet = new HttpGet("http://localhost:" + ourPort + "/Patient?searchThrowNullPointerException=1");
 

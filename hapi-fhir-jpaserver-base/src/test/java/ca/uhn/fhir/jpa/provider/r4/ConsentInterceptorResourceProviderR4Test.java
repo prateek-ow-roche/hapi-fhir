@@ -5,6 +5,7 @@ import ca.uhn.fhir.jpa.config.TestR4Config;
 import ca.uhn.fhir.jpa.dao.DaoConfig;
 import ca.uhn.fhir.rest.api.Constants;
 import ca.uhn.fhir.rest.api.PreferReturnEnum;
+import ca.uhn.fhir.rest.api.RestOperationTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.client.interceptor.CapturingInterceptor;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
@@ -455,7 +456,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 		ourRestServer.getInterceptorService().registerInterceptor(myConsentInterceptor);
 
 		IConsentService svc = mock(IConsentService.class);
-		when(svc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(svc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(svc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.REJECT);
 
 		consentService.setTarget(svc);
@@ -487,7 +488,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 		ourRestServer.getInterceptorService().registerInterceptor(myConsentInterceptor);
 
 		IConsentService svc = mock(IConsentService.class);
-		when(svc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(svc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(svc.canSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t -> {
 			IBaseResource resource = t.getArgument(1, IBaseResource.class);
 			if (resource instanceof Organization) {
@@ -526,7 +527,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 		ourRestServer.getInterceptorService().registerInterceptor(myConsentInterceptor);
 
 		IConsentService svc = mock(IConsentService.class);
-		when(svc.startOperation(any(), any())).thenReturn(ConsentOutcome.PROCEED);
+		when(svc.startOperation(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(svc.canSeeResource(any(), any(), any())).thenReturn(ConsentOutcome.PROCEED);
 		when(svc.willSeeResource(any(RequestDetails.class), any(IBaseResource.class), any())).thenAnswer(t -> {
 			IBaseResource resource = t.getArgument(1, IBaseResource.class);
@@ -610,7 +611,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 		private int mySeeCount = 0;
 
 		@Override
-		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
+		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
 			return ConsentOutcome.PROCEED;
 		}
 
@@ -652,7 +653,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 	private static class ConsentSvcCantSeeOddNumbered implements IConsentService {
 
 		@Override
-		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
+		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
 			return new ConsentOutcome(ConsentOperationStatusEnum.PROCEED);
 		}
 
@@ -686,7 +687,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 	private static class ConsentSvcCantSeeEvenNumbered implements IConsentService {
 
 		@Override
-		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
+		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
 			return new ConsentOutcome(ConsentOperationStatusEnum.PROCEED);
 		}
 
@@ -726,7 +727,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 		}
 
 		@Override
-		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
+		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
 			return new ConsentOutcome(myOperationStatus);
 		}
 
@@ -756,7 +757,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 	private static class ConsentSvcRejectCanSeeAnything implements IConsentService {
 
 		@Override
-		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
+		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
 			return ConsentOutcome.PROCEED;
 		}
 
@@ -787,7 +788,7 @@ public class ConsentInterceptorResourceProviderR4Test extends BaseResourceProvid
 	private static class ConsentSvcRejectWillSeeEvenNumbered implements IConsentService {
 
 		@Override
-		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
+		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
 			return ConsentOutcome.PROCEED;
 		}
 

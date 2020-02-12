@@ -20,6 +20,7 @@ package ca.uhn.fhir.rest.server.interceptor.consent;
  * #L%
  */
 
+import ca.uhn.fhir.rest.api.RestOperationTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -34,8 +35,8 @@ public class DelegatingConsentService implements IConsentService {
 	private IConsentService myTarget;
 
 	@Override
-	public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
-		return myTarget.startOperation(theRequestDetails, theContextServices);
+	public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
+		return myTarget.startOperation(theRequestDetails, theContextServices, theRestOperationType);
 	}
 
 	@Override

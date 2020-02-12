@@ -1,5 +1,6 @@
 package example;
 
+import ca.uhn.fhir.rest.api.RestOperationTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import ca.uhn.fhir.rest.server.interceptor.consent.ConsentOutcome;
@@ -19,7 +20,7 @@ public class ConsentInterceptors {
 		 * Invoked once at the start of every request
 		 */
 		@Override
-		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices) {
+		public ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType) {
 			// This means that all requests should flow through the consent service
 			// This has performance implications - If you know that some requests
 			// don't need consent checking it is a good idea to return

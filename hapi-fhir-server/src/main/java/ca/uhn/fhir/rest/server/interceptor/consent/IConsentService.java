@@ -20,6 +20,7 @@ package ca.uhn.fhir.rest.server.interceptor.consent;
  * #L%
  */
 
+import ca.uhn.fhir.rest.api.RestOperationTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -40,9 +41,14 @@ public interface IConsentService {
 	 * @param theContextServices An object passed in by the consent framework that
 	 *                           provides utility functions relevant to acting on
 	 *                           consent directives.
+	 * @param theRestOperationType The type of operation being performed.  In most cases
+	 *                             this will be the same as the RestOperationType in
+	 *                             theRequestDetails.  When the operation is a sub-request
+	 *                             within a transaction then this will be the REST
+	 *                             operation of the subrequest.
 	 * @return An outcome object. See {@link ConsentOutcome}
 	 */
-	ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices);
+	ConsentOutcome startOperation(RequestDetails theRequestDetails, IConsentContextServices theContextServices, RestOperationTypeEnum theRestOperationType);
 
 	/**
 	 * This method is called if a user may potentially see a resource via READ

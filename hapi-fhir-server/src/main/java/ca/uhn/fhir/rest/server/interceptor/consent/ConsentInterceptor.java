@@ -27,6 +27,7 @@ import ca.uhn.fhir.interceptor.api.Hook;
 import ca.uhn.fhir.interceptor.api.Interceptor;
 import ca.uhn.fhir.interceptor.api.Pointcut;
 import ca.uhn.fhir.rest.api.Constants;
+import ca.uhn.fhir.rest.api.RestOperationTypeEnum;
 import ca.uhn.fhir.rest.api.server.IPreResourceAccessDetails;
 import ca.uhn.fhir.rest.api.server.IPreResourceShowDetails;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
@@ -93,8 +94,8 @@ public class ConsentInterceptor {
 	}
 
 	@Hook(value = Pointcut.SERVER_INCOMING_REQUEST_PRE_HANDLED)
-	public void interceptPreHandled(RequestDetails theRequestDetails) {
-		ConsentOutcome outcome = myConsentService.startOperation(theRequestDetails, myContextConsentServices);
+	public void interceptPreHandled(RequestDetails theRequestDetails, RestOperationTypeEnum theRestOperationType) {
+		ConsentOutcome outcome = myConsentService.startOperation(theRequestDetails, myContextConsentServices, theRestOperationType);
 		Validate.notNull(outcome, "Consent service returned null outcome");
 
 		switch (outcome.getStatus()) {
